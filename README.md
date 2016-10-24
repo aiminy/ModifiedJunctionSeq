@@ -10,3 +10,4 @@ You can cite the JunctionSeq methods paper, now published in Nucleic Acids Resea
 Issues, bug reports, or feature requests can be posted to the 
 [github issues page](https://github.com/hartleys/JunctionSeq/issues).
 The developers can be contacted at JunctionSeq-Contact (at) list.nih.gov.
+# ModifiedJunctionSeq
