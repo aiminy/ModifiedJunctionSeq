@@ -588,9 +588,19 @@ testFeatureForDJU.fromCountVector <- function(formula1, mm0,mm1,disp, keepCoefs 
 
   coefficient <- fit1$coefficients[keepCoefs]
   
-  pval <- pchisq( deviance( fit0 ) - deviance( fit1 ), ncol( mm1 ) - ncol( mm0 ), lower.tail=FALSE )
+  zscore=deviance( fit0 )-deviance( fit1 )
+  df=ncol( mm1 )-ncol( mm0 )
   
-  logFC <- getLogFoldChangeFromModel(formula1, modelFrame, mm1, fit1)
+  cat(zscore,"\t",df,"\n")
+  
+  #pval <- pchisq( deviance( fit0 ) - deviance( fit1 ), ncol( mm1 ) - ncol( mm0 ), lower.tail=FALSE )
+  
+  #logFC <- getLogFoldChangeFromModel(formula1, modelFrame, mm1, fit1)
+  
+  pval <- zscore
+  
+  logFC <- df
+  
   
   return(list(coefficient = coefficient, logFC = logFC, pval = pval, disp = disp, countVector = countVector, fit = list(fitH0 = fit0, fitH1 = fit1) ))
 }
@@ -622,9 +632,18 @@ testFeatureForDJU.fromRow.simpleNormDist <- function(formula1, ecs, i, modelFram
 
   coefficient <- fit1$coefficients[keepCoefs]
   
-  pval <- pchisq( deviance( fit0 ) - deviance( fit1 ), ncol( mm1 ) - ncol( mm0 ), lower.tail=FALSE )
+  zscore=deviance( fit0 )-deviance( fit1 )
+  df=ncol( mm1 )-ncol( mm0 )
   
-  logFC <- getLogFoldChangeFromModel(formula1, modelFrame, mm1, fit1)
+  cat(zscore,"\t",df,"\n")
+  
+  #pval <- pchisq( deviance( fit0 ) - deviance( fit1 ), ncol( mm1 ) - ncol( mm0 ), lower.tail=FALSE )
+  
+  #logFC <- getLogFoldChangeFromModel(formula1, modelFrame, mm1, fit1)
+  
+  pval <- zscore
+  
+  logFC <- df
   
   return(list(coefficient = coefficient, logFC = logFC, pval = pval, disp = disp, countVector = countVector, fit = list(fitH0 = fit0, fitH1 = fit1) ))
 }

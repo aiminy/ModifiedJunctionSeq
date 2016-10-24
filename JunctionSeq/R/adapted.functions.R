@@ -14,7 +14,8 @@
 #   here: http://github.com/Bioconductor-mirror/DESeq2/blob/master/DESCRIPTION
 #         and
 #   here: http://github.com/Bioconductor-mirror/DEXSeq/blob/master/DESCRIPTION
-
+library(base)
+library(BiocGenerics)
 #From DEXSeq:
 JS.perGeneQValue = function(pvals, wTest, geneID, method = JS.perGeneQValueExact) {
   
@@ -272,7 +273,7 @@ estimateSizeFactorsForMatrix <- function( counts, locfunc = stats::median, geoMe
 }
 
 
-
+library(BiocParallel)
 estimateUnsharedDispersions <- function(object,
                                         maxit=100, quiet=FALSE, formula=design(object), 
                                         BPPARAM=MulticoreParam(workers=1)) {

@@ -28,22 +28,22 @@ INTERNALDEBUGMODE = FALSE
 ######### Running JunctionSeq Analyses:
 ##########################################################################
 
-runJunctionSeqAnalyses <- function(sample.files, sample.names, condition, 
+runJunctionSeqAnalyses <- function(sample.files, sample.names, condition,
                                 flat.gff.file = NULL,
                                 analysis.type = c("junctionsAndExons","junctionsOnly","exonsOnly"),
                                 meanCountTestableThreshold = "auto",
                                 nCores = 1,
-                                use.covars = NULL, 
-                                test.formula0 = formula(~ sample + countbin), 
+                                use.covars = NULL,
+                                test.formula0 = formula(~ sample + countbin),
                                 test.formula1 = formula(~ sample + countbin + condition : countbin),
                                 effect.formula = formula(~ condition + countbin + condition : countbin),
                                 geneLevel.formula = formula(~ condition),
-                                use.exons = NULL, use.junctions = NULL, 
-                                use.known.junctions = TRUE, use.novel.junctions = TRUE, 
-                                use.multigene.aggregates = FALSE, 
+                                use.exons = NULL, use.junctions = NULL,
+                                use.known.junctions = TRUE, use.novel.junctions = TRUE,
+                                use.multigene.aggregates = FALSE,
                                 gene.names = NULL,
                                 method.GLM = c(c("advanced","DESeq2-style"), c("simpleML","DEXSeq-v1.8.0-style")),
-                                method.dispFit = c("parametric", "local", "mean"), 
+                                method.dispFit = c("parametric", "local", "mean"),
                                 method.dispFinal = c("shrink","max","fitted","noShare"),
                                 method.sizeFactors = c("byGenes","byCountbins"),
                                 method.countVectors = c("geneLevelCounts","sumOfAllBinsForGene","sumOfAllBinsOfSameTypeForGene"),
@@ -56,6 +56,11 @@ runJunctionSeqAnalyses <- function(sample.files, sample.names, condition,
                                 replicateDEXSeqBehavior.useRawBaseMean = FALSE,
                                 verbose = TRUE, debug.mode = FALSE
                                 ){
+
+
+
+  cat("use local version\n")
+
   keep.debug.model.data <- TRUE
   gtf.format <- TRUE
   analysis.type <- match.arg(analysis.type)
@@ -65,9 +70,9 @@ runJunctionSeqAnalyses <- function(sample.files, sample.names, condition,
   method.sizeFactors <- match.arg(method.sizeFactors)
   method.countVectors <- match.arg(method.countVectors)
   method.expressionEstimation <- match.arg(method.expressionEstimation)
-  
+
   callStack <- list(deparse(match.call(), nlines=1))
-  
+
   if(is.null(use.junctions) && is.null(use.exons)){
     if(analysis.type == "junctionsAndExons"){
       use.junctions <- TRUE
@@ -83,7 +88,7 @@ runJunctionSeqAnalyses <- function(sample.files, sample.names, condition,
     if(is.null(use.junctions) || is.null(use.exons)){
       stop(paste0("Illegal syntax! If parameter use.junctions or use.exons are used, then BOTH must be set!\n use.junctions = '",use.junctions,"', use.exons = '",use.exons,"'"))
     }
-    
+
     if(isTRUE(use.junctions) && isTRUE(use.exons)){
       analysis.type <- "junctionsAndExons"
     } else if(isTRUE(use.junctions) && isTRUE(! use.exons)){
@@ -94,7 +99,7 @@ runJunctionSeqAnalyses <- function(sample.files, sample.names, condition,
       stop("Illegal syntax! Parameters use.exons and use.junctions cannot both be false!")
     }
   }
-  
+
   if(isTRUE(verbose)){
     message("> STARTING runJunctionSeqAnalyses (v",packageVersion("JunctionSeq"),") (",date(),")")
     message(paste("> rJSA: sample.files: ", paste0(sample.files,collapse=", ")))
@@ -109,14 +114,14 @@ runJunctionSeqAnalyses <- function(sample.files, sample.names, condition,
     message(paste("> rJSA: test.formula0: ",paste0(test.formula0,collapse=" ")))
     message(paste("> rJSA: test.formula1: ",paste0(test.formula1,collapse=" ")))
     message(paste("> rJSA: use.multigene.aggregates: ", use.multigene.aggregates))
-    
+
   }
   #require("DEXSeq")
-  
+
   if(! is.factor(condition)){
      condition <- factor(condition, levels = sort(unique(condition)))
   }
-  
+
   design <- data.frame(condition = condition)
   if(! is.null(use.covars)){
     message(paste0("> rJSA: using covars:"," ",date()))
@@ -128,7 +133,7 @@ runJunctionSeqAnalyses <- function(sample.files, sample.names, condition,
         use.covars[[i]] <- factor(use.covars[[i]], levels = sort(unique(use.covars[[i]]))  )
       }
     }
-    
+
     design <- data.frame(cbind(design,use.covars))
     for(i in 1:length(names(use.covars))){
       message(paste0("      covar: ",names(use.covars)[i]))
@@ -142,7 +147,7 @@ runJunctionSeqAnalyses <- function(sample.files, sample.names, condition,
   jscs = readJunctionSeqCounts(countfiles = as.character(sample.files),
                              samplenames = sample.names,
                              design = design,
-                             flat.gff.file = flat.gff.file, 
+                             flat.gff.file = flat.gff.file,
                              verbose = verbose,
                              use.junctions = use.junctions,
                              use.novel.junctions = use.novel.junctions,
@@ -155,11 +160,11 @@ runJunctionSeqAnalyses <- function(sample.files, sample.names, condition,
                              gene.names = gene.names
                              )
   attr(jscs,"CallStack") <- c(list(deparse(match.call())), attr(jscs,"CallStack"))
-  
+
   if(isTRUE(verbose)) {  message(paste0("> rJSA: Count files read."," ",date(),".")) }
   if(isTRUE(debug.mode)) reportMem(jscs)
   if(isTRUE(verbose)) { message(paste0("> rJSA: Estimating Size Factors..."," ",date(),".")) }
-  
+
   jscs <- estimateJunctionSeqSizeFactors(jscs, method.sizeFactors = method.sizeFactors, replicateDEXSeqBehavior.useRawBaseMean = replicateDEXSeqBehavior.useRawBaseMean, verbose = verbose)
     if(isTRUE(verbose)) { message(paste0("> rJSA: Size Factors Done. Size Factors are:","."))
                   message(paste0("> rJSA: ",paste0(names(sizeFactors(jscs)),collapse=",")))
@@ -168,51 +173,51 @@ runJunctionSeqAnalyses <- function(sample.files, sample.names, condition,
                   message(paste0("> rJSA: Estimating Dispersions..."," ",date(),"."))
                 }
 
-    jscs <- estimateJunctionSeqDispersions(jscs, 
+    jscs <- estimateJunctionSeqDispersions(jscs,
                                     method.GLM = method.GLM,
-                                    nCores = nCores, 
-                                    test.formula1=test.formula1, 
-                                    meanCountTestableThreshold = meanCountTestableThreshold, 
+                                    nCores = nCores,
+                                    test.formula1=test.formula1,
+                                    meanCountTestableThreshold = meanCountTestableThreshold,
                                     verbose = verbose)
 
     if(isTRUE(verbose)) { message(paste0("> rJSA: Dispersions estimated."," ",date(),".")) }
     if(isTRUE(debug.mode)) reportMem(jscs)
     if(isTRUE(verbose)) { message(paste0("> rJSA: Fitting Dispersion Fcn..."," ",date(),".")) }
-  jscs <- fitJunctionSeqDispersionFunction(jscs, 
+  jscs <- fitJunctionSeqDispersionFunction(jscs,
                                 method.GLM = method.GLM,
                                 method.dispFit = method.dispFit,
                                 method.dispFinal = method.dispFinal,
-                                verbose = verbose, 
+                                verbose = verbose,
                                 fitDispersionsForExonsAndJunctionsSeparately = fitDispersionsForExonsAndJunctionsSeparately)
-  
+
     if(isTRUE(verbose)) { message(paste0("> rJSA: Dispersions Fcn Fitted."," ",date(),".")) }
     if(isTRUE(debug.mode)) reportMem(jscs)
     if(isTRUE(verbose)) { message(paste0("> rJSA: Testing for DEU..."," ",date(),".")) }
-    jscs <- testForDiffUsage(jscs, 
-                  nCores = nCores, 
-                  test.formula0 = test.formula0, 
-                  test.formula1 = test.formula1, 
+    jscs <- testForDiffUsage(jscs,
+                  nCores = nCores,
+                  test.formula0 = test.formula0,
+                  test.formula1 = test.formula1,
                   method.GLM = method.GLM,
                   keep.hypothesisTest.fit = keep.hypothesisTest.fit,
                   meanCountTestableThreshold = meanCountTestableThreshold,
                   method.cooksFilter = method.cooksFilter,
                   optimizeFilteringForAlpha = optimizeFilteringForAlpha,
-                  verbose = verbose); 
-  
-  
+                  verbose = verbose);
+
+
     if(isTRUE(verbose)) { message(paste0("> rJSA: DEU tests complete."," ",date(),".")) }
     if(isTRUE(debug.mode)) reportMem(jscs)
     if(isTRUE(verbose)) { message(paste0("> rJSA: Estimating effect sizes using effects models..."," ",date(),".")) }
-  jscs <- estimateEffectSizes( jscs , 
-                               effect.formula = effect.formula, 
-                               geneLevel.formula = geneLevel.formula, 
+  jscs <- estimateEffectSizes( jscs ,
+                               effect.formula = effect.formula,
+                               geneLevel.formula = geneLevel.formula,
                                method.expressionEstimation = method.expressionEstimation,
                                keep.estimation.fit = keep.estimation.fit,
                                nCores = nCores)
     if(isTRUE(verbose)) { message(paste0("> rJSA: Effect Sizes estimated.",".")) }
     if(isTRUE(debug.mode)) reportMem(jscs)
     if(isTRUE(verbose)) { message(paste0("> rJSA: Generating results table..."," ",date(),".")) }
-  
+
   sampleNames(jscs) = as.character(sample.names)
 
   if(isTRUE(debug.mode)) reportMem(jscs)
@@ -221,11 +226,11 @@ runJunctionSeqAnalyses <- function(sample.files, sample.names, condition,
 }
 
 ##############################################################################################################################################################################################################################
-######### 
+#########
 ##############################################################################################################################################################################################################################
 
 
-writeCompleteResults <- function(jscs, outfile.prefix, 
+writeCompleteResults <- function(jscs, outfile.prefix,
                             gzip.output = TRUE, FDR.threshold = 0.01,
                             save.allGenes = TRUE, save.sigGenes = TRUE, save.fit = FALSE, save.VST = FALSE,
                             save.bedTracks = TRUE,
@@ -245,59 +250,59 @@ writeCompleteResults <- function(jscs, outfile.prefix,
        message(paste("> wcr: bedtrack.format: ",bedtrack.format))
    }
    keep.debug.model.data <- TRUE
-   
+
    if(isTRUE(save.jscs)) save( jscs, file = paste0(outfile.prefix, "jscs.RData") )
-   
+
    if(isTRUE(verbose)) message("> wcr: Writing sizeFactors.")
    writeSizeFactors(jscs, file = paste0(outfile.prefix,"sizeFactors.txt"))
-   
+
    countVectors <- jscs@countVectors
    sampleNames <- sampleNames(jscs@phenoData)
    colnames(countVectors) <- c(paste0("rawCounts_",sampleNames), paste0("rawGeneCounts_",sampleNames))
-   
+
    expression.data <- cbind.data.frame(featureID = rownames(fData(jscs)), do.call(cbind.data.frame,jscs@plottingEstimates) , countVectors )
    colnames(expression.data) <- c("featureID", unlist( lapply( jscs@plottingEstimates, colnames ) ), colnames(countVectors) )
-   
+
    if(isTRUE(save.VST)){
      expression.data.vst <- cbind.data.frame(featureID = rownames(fData(jscs)), do.call(cbind.data.frame,lapply(jscs@plottingEstimates, function(pe){ vst(pe,jscs) }))  )
      colnames(expression.data.vst) <- c("featureID", paste0( unlist( lapply( jscs@plottingEstimates, colnames ) ), "VST" ) )
    }
-   
+
    if(isTRUE(save.allGenes) && isTRUE(verbose)) message("> wcr: Writing results for ",length(unique(as.character(fData(jscs)$geneID)))," genes.")
    if(isTRUE(save.allGenes) && isTRUE(verbose)) message("> wcr:     Found ",nrow(fData(jscs))," counting bins belonging to these genes.")
    if(isTRUE(save.allGenes)) write.simple.table.gz(expression.data,     file=paste0(outfile.prefix,"allGenes.expression.data.txt"),      use.gzip=gzip.output,row.names=FALSE,col.names=TRUE,quote=FALSE, sep = '\t')
    if(isTRUE(save.allGenes) && isTRUE(save.VST)) write.simple.table.gz(expression.data.vst, file=paste0(outfile.prefix,"allGenes.expression.data.VST.txt"),  use.gzip=gzip.output,row.names=FALSE,col.names=TRUE,quote=FALSE, sep = '\t')
-   
+
    if(isTRUE(save.allGenes)) write.table.gz(fData(jscs),         file=paste0(outfile.prefix,"allGenes.results.txt"), use.gzip=gzip.output,row.names="featureID",col.names=TRUE,quote=FALSE)
-   
+
    modelFitForHypothesisTest <- jscs@modelFitForHypothesisTest
    modelFitForEffectSize <- jscs@modelFitForEffectSize
    if(isTRUE(save.fit)) save( modelFitForHypothesisTest, file = paste0(outfile.prefix, "modelFitForHypothesisTest.RData") )
    if(isTRUE(save.fit)) save( modelFitForEffectSize,     file = paste0(outfile.prefix, "modelFitForEffectSize.RData") )
-   
+
    sig.features <- which( f.na(fData(jscs)$padjust < FDR.threshold) )
    gene.list <- unique(as.character(fData(jscs)$geneID[sig.features]))
-   
 
-   
+
+
    if(isTRUE(save.sigGenes)){
      if(length(sig.features) == 0){
        if(isTRUE(verbose)) message("> wcr: Zero Significant Features! (at adjusted-p-value threshold ",FDR.threshold,")")
      } #else {
-       
+
        tryCatch({
          genewiseTable <- makeGeneWiseTable(jscs, gene.list, FDR.threshold = FDR.threshold, verbose = verbose)
          write.simple.table.gz(pData(genewiseTable),file=paste0(outfile.prefix,"sigGenes.genewiseResults.txt"),      use.gzip=gzip.output,row.names=FALSE,col.names=TRUE,quote=FALSE, sep = '\t')
        }, error = function(e){
          warning("   Warning! Caught error while attempting to compile optional genewise table.\n   Error text:",e,"");
        })
-       
+
        if(isTRUE(verbose)) message("> wcr: Writing results for ", length(gene.list), " genes with 1 or more significant junctions (at adjusted-p-value threshold ", FDR.threshold,")")
-     
+
        sig.rows <- which( as.character(fData(jscs)$geneID) %in% gene.list )
        if(isTRUE(verbose)) message("> wcr:     Found ", length(sig.rows), " counting bins belonging to those genes.")
-       
-       
+
+
        if(isTRUE(verbose)) message("> wcr:     Writing sigGenes.expression.data.txt")
                             write.simple.table.gz(expression.data[sig.rows,, drop=FALSE],     file=paste0(outfile.prefix,"sigGenes.expression.data.txt"),      use.gzip=gzip.output,row.names=FALSE,col.names=TRUE,quote=FALSE, sep = '\t')
        if(isTRUE(save.VST)) write.simple.table.gz(expression.data.vst[sig.rows,, drop=FALSE], file=paste0(outfile.prefix,"sigGenes.expression.data.VST.txt"),  use.gzip=gzip.output,row.names=FALSE,col.names=TRUE,quote=FALSE, sep = '\t')
@@ -305,25 +310,25 @@ writeCompleteResults <- function(jscs, outfile.prefix,
                             write.table.gz(fData(jscs)[sig.rows,, drop=FALSE],         file=paste0(outfile.prefix,"sigGenes.results.txt"), use.gzip=gzip.output,row.names="featureID",col.names=TRUE,quote=FALSE)
      #}
    }
-   
+
    if(isTRUE(gzip.output)){
      bedFileExt <- ".bed.gz"
    } else {
      bedFileExt <- ".bed"
    }
    if(isTRUE(verbose)) message("> wcr:     Writing bed tracks.")
-   
+
    if(isTRUE(save.bedTracks)){
      if(isTRUE(save.allGenes)){
        if(any(fData(jscs)$featureType == "splice_site" | fData(jscs)$featureType == "novel_splice_site")){
-         writeExprBedTrack(paste0(outfile.prefix,"allGenes.junctionCoverage",bedFileExt), 
+         writeExprBedTrack(paste0(outfile.prefix,"allGenes.junctionCoverage",bedFileExt),
                          jscs = jscs, only.with.sig.gene = FALSE,
                          plot.exons = FALSE, plot.junctions = TRUE,
                          output.format = bedtrack.format, verbose = verbose, use.gzip = gzip.output,
                          trackLine = paste0("track name='JctExprAll' description='Splice Junction Coverage Estimates, by group' itemRgb='On' visibility=3"))
        }
        if(any(fData(jscs)$featureType == "exonic_part")){
-         writeExprBedTrack(paste0(outfile.prefix,"allGenes.exonCoverage",bedFileExt), 
+         writeExprBedTrack(paste0(outfile.prefix,"allGenes.exonCoverage",bedFileExt),
                          jscs = jscs, only.with.sig.gene = FALSE,
                          plot.exons = TRUE, plot.junctions = FALSE,
                          output.format = bedtrack.format, verbose = verbose, use.gzip = gzip.output,
@@ -334,20 +339,20 @@ writeCompleteResults <- function(jscs, outfile.prefix,
        sig.features <- which( f.na(fData(jscs)$padjust < FDR.threshold) )
        #if(length(sig.features) > 0){
          if(any(fData(jscs)$featureType == "splice_site" | fData(jscs)$featureType == "novel_splice_site")){
-           writeExprBedTrack(paste0(outfile.prefix,"sigGenes.junctionCoverage",bedFileExt), 
+           writeExprBedTrack(paste0(outfile.prefix,"sigGenes.junctionCoverage",bedFileExt),
                            jscs = jscs, only.with.sig.gene = TRUE,
                            plot.exons = FALSE, plot.junctions = TRUE,
                            output.format = bedtrack.format, verbose = verbose, FDR.threshold= FDR.threshold, use.gzip = gzip.output,
                            trackLine = paste0("track name='JctExprAll' description='Sig genes splice Junction Coverage Estimates, by group' itemRgb='On' visibility=3"))
          }
          if(any(fData(jscs)$featureType == "exonic_part")){
-           writeExprBedTrack(paste0(outfile.prefix,"sigGenes.exonCoverage",bedFileExt), 
-                           jscs = jscs, only.with.sig.gene = TRUE, 
+           writeExprBedTrack(paste0(outfile.prefix,"sigGenes.exonCoverage",bedFileExt),
+                           jscs = jscs, only.with.sig.gene = TRUE,
                            plot.exons = TRUE, plot.junctions = FALSE,
                            output.format = bedtrack.format, verbose = verbose, FDR.threshold= FDR.threshold, use.gzip = gzip.output,
                            trackLine = paste0("track name='ExonExprAll' description='Sig genes exonic Region Coverage Estimates, by group' itemRgb='On' visibility=3"))
          }
-         writeSigBedTrack(paste0(outfile.prefix,"sigGenes.pvalues",bedFileExt), 
+         writeSigBedTrack(paste0(outfile.prefix,"sigGenes.pvalues",bedFileExt),
                           jscs = jscs,
                           output.format = bedtrack.format, verbose = verbose, FDR.threshold= FDR.threshold, use.gzip = gzip.output,
                           trackLine = paste0("track name='JctPvals' description='Significant Splice Junctions' useScore=1 visibility=3")
@@ -355,9 +360,9 @@ writeCompleteResults <- function(jscs, outfile.prefix,
        #}
      }
    }
-   
+
    if(isTRUE(verbose)) message("> DONE writeCompleteResults (",date(),")")
-   
+
 
 }
 
@@ -391,32 +396,32 @@ generateAllExpressionEstimates.v2 <- function(jscs,nCores = 1,fitExpToVar="condi
 
    levelCt <- length(levels(jscs@phenoData$condition))
    sampleCt <- length(sampleNames(jscs@phenoData))
-   
+
    out <- getAllData2(jscs, runOnFeatures = seq_len(nrow(fData(jscs))),
-                            fitExpToVar=fitExpToVar, 
+                            fitExpToVar=fitExpToVar,
                             formula1 = formula(paste0("~ ",fitExpToVar," + countbin + ",fitExpToVar," : countbin")),
                             nCores=nCores, dispColumn="dispersion",verbose = verbose)
-   
+
    out <- cbind.data.frame(featureID = rownames(fData(jscs)),
                            geneID = fData(jscs)$geneID,
                            countbinID = fData(jscs)$countbinID,
                            out)
-   
+
    out
 }
 
 ##############################################################################################################################################################################################################################
-######### 
+#########
 ##############################################################################################################################################################################################################################
 
 
 generateAllExpressionEstimates <- function(jscs,nCores = 1,fitExpToVar="condition",verbose=TRUE){
-   
+
    myApply <- getMyApply(nCores)
 
    levelCt <- length(levels(jscs@phenoData$condition))
    sampleCt <- length(sampleNames(jscs@phenoData))
-   
+
    out <- rbind( c(0.0,0.0,0.0,rep(0.0,levelCt),rep(0.0,levelCt),rep(0.0,sampleCt),rep(0.0,levelCt),rep(0.0,levelCt),rep(0.0,sampleCt)))
    #out <- rbind( c(0,0,0,rep(0,levelCt),rep(0,levelCt),rep(0,sampleCt),rep(0,levelCt),rep(0,levelCt),rep(0,sampleCt)))
 
@@ -432,7 +437,7 @@ generateAllExpressionEstimates <- function(jscs,nCores = 1,fitExpToVar="conditio
                    )
    gene.list <- unique(jscs@featureData$geneID)
    blank.line.length <- length(levels(jscs@phenoData$condition)) * 4
-   
+
    if(isTRUE(verbose)){
       message(paste("Starting expression estimate generation on",length(gene.list),"top-level features (eg genes)."))
    }
@@ -459,83 +464,83 @@ generateAllExpressionEstimates <- function(jscs,nCores = 1,fitExpToVar="conditio
           names(curr)[1] <- "featureID"
           exonCt <- dim(curr)[1]
           NA.buffer <- matrix(rep(NA,blank.line.length * exonCt), nrow=exonCt, ncol=blank.line.length )
-          norCounts <- cbind.data.frame(get.norcounts.data(jscs,geneID),get.norcounts.data(jscs,geneID,vst.xform=FALSE), get.rawcounts.data(jscs,geneID))          
+          norCounts <- cbind.data.frame(get.norcounts.data(jscs,geneID),get.norcounts.data(jscs,geneID,vst.xform=FALSE), get.rawcounts.data(jscs,geneID))
           curr <- cbind.data.frame(curr,NA.buffer,norCounts)
           names(curr) <- names.out
           row.names(curr) <- rn
           return( list(FALSE, curr) )
       }
    }
-   
+
    pair.buffer <- myApply(as.list(1:length(gene.list)), FUN=get.one.genes.data)
-   
+
    genes.data.list <- lapply(pair.buffer, "[[", 2)
    did.gene.converge <- sapply(pair.buffer, "[[", 1)
-   
+
    if(isTRUE(verbose)){
      message(paste("generated expression data for: ",length(genes.data.list),"top-level features (ie genes). ",sum(did.gene.converge)," converged. ",sum(! did.gene.converge)," failed."))
    }
 
    out <- do.call(rbind.data.frame,genes.data.list)
    names(out) <- names.out
-   
+
    #############################
    #NEW CODE: save data to jscs!
    message("Saving data to JunctionSeqCountSet. (",date(),")")
    conditionLevels <- levels(jscs@phenoData$condition)
    names(conditionLevels) <- conditionLevels
    sampleNames <- colnames(counts(jscs))
-   
+
    exprEstimate          <- out[,  strStartsWith(names(out), "expr_") ]
    exprEstimateVST       <- out[,  strStartsWith(names(out), "exprVST_") ]
    otherExprEstimate     <- do.call(cbind.data.frame, lapply( conditionLevels, function(x){ rep(NA,nrow(jscs))} )  )
    otherExprEstimateVST  <- do.call(cbind.data.frame, lapply( conditionLevels, function(x){ rep(NA,nrow(jscs))} )  )
    relExprEstimate       <- out[,  strStartsWith(names(out), "rExpr_") ]
    relExprEstimateVST    <- out[,  strStartsWith(names(out), "rExprVST_") ]
-   
+
    normCounts      <- cbind( out[,  strStartsWith(names(out),"normCount_") ],     do.call(cbind.data.frame, lapply( 1:sampleCt, function(x){ rep(NA,nrow(jscs))} )  )   )
    normCountsVST    <- cbind( out[,  strStartsWith(names(out),"normCountVST") ],   do.call(cbind.data.frame, lapply( 1:sampleCt, function(x){ rep(NA,nrow(jscs))} )  )   )
-   
+
    colnames(otherExprEstimate) <- paste0("geneExpr","_",conditionLevels)
    colnames(otherExprEstimateVST) <- paste0("geneExprVST","_",conditionLevels)
    colnames(relExprEstimate) <- paste0("relExpr","_",conditionLevels)
    colnames(relExprEstimateVST) <- paste0("relExprVST","_",conditionLevels)
-   
+
    colnames(normCounts) <- c(paste0("normCount_",sampleNames), paste0("normGeneCount_",sampleNames))
    colnames(normCountsVST) <- c(paste0("normCountsVST_",sampleNames), paste0("normGeneCountsVST_",sampleNames))
-   
+
    jscs@plottingEstimates    <- list(exprEstimate = exprEstimate,
                                      geneExprEstimate = otherExprEstimate,
-                                     relExprEstimate = relExprEstimate, 
+                                     relExprEstimate = relExprEstimate,
                                      normCounts = normCounts)
-   jscs@plottingEstimatesVST <- list(exprEstimateVST = exprEstimateVST, 
-                                     geneExprEstimateVST = otherExprEstimateVST, 
-                                     relExprEstimateVST = relExprEstimateVST, 
+   jscs@plottingEstimatesVST <- list(exprEstimateVST = exprEstimateVST,
+                                     geneExprEstimateVST = otherExprEstimateVST,
+                                     relExprEstimateVST = relExprEstimateVST,
                                      normCountsVST = normCountsVST)
    message("Done saving data to JunctionSeqCountSet. (",date(),")")
    #############################
-   
+
    if(isTRUE(verbose)){
      message(paste("Collapsed expression data into a single data frame. generateAllExpressionEstimates() complete."))
    }
-   
+
    list(jscs, out)
 }
 
 ##############################################################################################################################################################################################################################
-######### 
+#########
 ##############################################################################################################################################################################################################################
 
 
 readJunctionSeqCounts <- function(countfiles = NULL, countdata = NULL,
                                   samplenames,  design,
-                                  flat.gff.file=NULL, 
+                                  flat.gff.file=NULL,
                                   test.formula1 = formula(~ sample + countbin + condition : countbin),
                                   analysis.type = c("junctionsAndExons","junctionsOnly","exonsOnly"),
                                   nCores = 1,
-                                  use.exons = NULL, use.junctions = NULL, 
+                                  use.exons = NULL, use.junctions = NULL,
                                   use.known.junctions = TRUE,
-                                  use.novel.junctions = TRUE, 
+                                  use.novel.junctions = TRUE,
                                   use.multigene.aggregates = FALSE,
                                   gene.names = NULL,
                                   verbose = TRUE,
@@ -543,12 +548,12 @@ readJunctionSeqCounts <- function(countfiles = NULL, countdata = NULL,
                                   noDESeqMatrix = FALSE)
 {
    method.countVectors <- match.arg(method.countVectors)
-   
+
    if(isTRUE(verbose)) {
       message("-> STARTING readJunctionSeqCounts (",date(),")")
    }
-   
-   
+
+
    analysis.type <- match.arg(analysis.type)
    if(is.null(use.junctions) && is.null(use.exons)){
     if(analysis.type == "junctionsAndExons"){
@@ -565,7 +570,7 @@ readJunctionSeqCounts <- function(countfiles = NULL, countdata = NULL,
     if(is.null(use.junctions) || is.null(use.exons)){
       stop(paste0("Illegal syntax! If parameter use.junctions or use.exons are used, then BOTH must be set!\n use.junctions = '",use.junctions,"', use.exons = '",use.exons,"'"))
     }
-    
+
     if(use.junctions && use.exons){
       analysis.type <- "junctionsAndExons"
     } else if(use.junctions && (! use.exons)){
@@ -584,76 +589,73 @@ readJunctionSeqCounts <- function(countfiles = NULL, countdata = NULL,
       message("---> RJSC: use.junctions:",use.junctions)
       message("---> RJSC: use.novel.junctions:",use.novel.junctions)
    }
-   
-   
+
+
    if((is.null(countfiles) && is.null(countdata))){
      stop("Fatal error: Either countfiles OR countdata must be set! Both are null!")
    }
    if(  (!is.null(countfiles)) && (!is.null(countdata))   ){
      stop("Fatal error: Either countfiles OR countdata must be set! Both are non-null!")
    }
-   
+
    stopifnot( class(design) == "data.frame" )
-   
+
    for(i in 1:ncol(design)){
      if( ! is.factor(design[[i]])){
         stop("ERROR: design must be a data.frame composed entirely of factors!")
      }
    }
-   
+
    if(! is.null(countfiles)){
      lf <- lapply( countfiles, function(x)
         read.table( x, header=FALSE,stringsAsFactors=FALSE ) )
    } else {
      lf <- countdata
    }
-   
+
    if( !all( sapply( lf[-1], function(x) all( x$V1 == lf[1]$V1 ) ) ) )
       stop( "Count files have differing gene ID column." )
-   if(isTRUE(verbose)) message("---> File read complete.");  
+   if(isTRUE(verbose)) message("---> File read complete.");
 
    dcounts <- sapply( lf, `[[`, "V2" )
    rownames(dcounts) <- lf[[1]][,1]
    dcounts <- dcounts[ substr(rownames(dcounts),1,1)!="_", ]
-
-   bin.type <- sapply( rownames(dcounts), 
-                     function(x){
-                        substr(strsplit(x, ":",fixed=TRUE)[[1]][2],1,1)
-                     })
-   raw.geneID <- sapply( rownames(dcounts), 
-                     function(x){
-                        strsplit(x, ":",fixed=TRUE)[[1]][1]
-                     })
    
-   if(isTRUE(verbose)) message(paste0("---> Extracted counts. Found ",dim(dcounts)[1]," features so far."));  
+   bin.type <- sapply( rownames(dcounts),
+                       function(x){
+                         substr(strsplit(x, ":",fixed=TRUE)[[1]][2],1,1)
+                       })
+   raw.geneID <- sapply( rownames(dcounts),
+                         function(x){
+                           strsplit(x, ":",fixed=TRUE)[[1]][1]
+                         })
+   
+   if(isTRUE(verbose)) message(paste0("---> Extracted counts. Found ",dim(dcounts)[1]," features so far."));
    
    geneCountTable <- dcounts[bin.type == "A",, drop=FALSE]
    rownames(geneCountTable) <- sapply(strsplit(rownames(geneCountTable), ":"),"[[",1)
    colnames(geneCountTable) <- as.character(samplenames)
    use.bins <- bin.type != "A"
    
-   if(isTRUE(verbose)) message(paste0("---> Extracted gene-level counts. Found: ",dim(geneCountTable)[1], " genes and aggregate-genes."))
-   if(isTRUE(verbose)) message(paste0("---> Removed gene features. Found: ",sum(use.bins), " features to be included so far."))
-   
    if(isTRUE(! use.junctions) && isTRUE(! use.exons)){
-      stop("FATAL ERROR: At least one of: use.junctions or use.exons must be set to TRUE. Otherwise you've got no data to test!")
+     stop("FATAL ERROR: At least one of: use.junctions or use.exons must be set to TRUE. Otherwise you've got no data to test!")
    }
    
    if(isTRUE(! use.junctions)){
-      use.bins <- use.bins & bin.type != "J" & bin.type != "N"
-      if(isTRUE(verbose)) message(paste0("---> Removed splice junction features. Found: ",sum(use.bins), " features to be included so far."))
-   } 
+     use.bins <- use.bins & bin.type != "J" & bin.type != "N"
+     if(isTRUE(verbose)) message(paste0("---> Removed splice junction features. Found: ",sum(use.bins), " features to be included so far."))
+   }
    if(isTRUE(! use.novel.junctions)){
-      use.bins <- use.bins & bin.type != "N"
-      if(isTRUE(verbose)) message(paste0("---> Removed novel splice junction features. Found: ",sum(use.bins), " features to be included so far."))
+     use.bins <- use.bins & bin.type != "N"
+     if(isTRUE(verbose)) message(paste0("---> Removed novel splice junction features. Found: ",sum(use.bins), " features to be included so far."))
    }
    if(isTRUE(! use.known.junctions)){
      use.bins <- use.bins & bin.type != "J"
      if(isTRUE(verbose)) message(paste0("---> Removed known splice junction features. Found: ",sum(use.bins), " features to be included so far."))
    }
    if(isTRUE(! use.exons)){
-      use.bins <- use.bins & bin.type != "E"
-      if(isTRUE(verbose)) message(paste0("---> Removed exon features. Found: ",sum(use.bins), " features to be included so far."))
+     use.bins <- use.bins & bin.type != "E"
+     if(isTRUE(verbose)) message(paste0("---> Removed exon features. Found: ",sum(use.bins), " features to be included so far."))
    }
    
    is.multiGene.aggregate <- grepl("+", raw.geneID, fixed=TRUE)
@@ -664,58 +666,95 @@ readJunctionSeqCounts <- function(countfiles = NULL, countdata = NULL,
    if(isTRUE(verbose)) message("---> Note: ",sum(is.multiGene.aggregate[use.bins])," counting bins from overlapping genes") 
    if(isTRUE(verbose)) message("--->          There are ",multiGene.aggregate.ct,    " multigene aggregates.")
    if(isTRUE(verbose)) message("--->          There are ",multiGene.aggregate.geneCt," genes that are part of an aggregate.")
-   if(isTRUE(! use.multigene.aggregates)){
-      use.bins <- use.bins & (! is.multiGene.aggregate)
-      if(isTRUE(verbose)) message(paste0("---> Removed multigene-aggregate features. Found: ",sum(use.bins), " features to be included so far."))
-   }
    
+   if(isTRUE(! use.multigene.aggregates)){
+     use.bins <- use.bins & (! is.multiGene.aggregate)
+     if(isTRUE(verbose)) message(paste0("---> Removed multigene-aggregate features. Found: ",sum(use.bins), " features to be included so far."))
+   }
    
    if(isTRUE(verbose)) message(paste0("---> Final feature count: ",sum(use.bins), " features to be included in the analysis."))
    dcounts <- dcounts[use.bins,, drop=FALSE]
    bin.type <- bin.type[use.bins]
    
-   if(isTRUE(verbose)) message("---> Extracted feature counts.");  
+   if(isTRUE(verbose)) message("---> Extracted feature counts.");
    
    colnames(dcounts) <- as.character(samplenames)
    splitted <- strsplit(rownames(dcounts), ":")
    exons <- sapply(splitted, "[[", 2)
    genesrle <- sapply( splitted, "[[", 1)
    
-   if(isTRUE(verbose)) message("---> counts complete.");  
-   
-   
+   if(isTRUE(verbose)) message("---> counts complete.");
+
+   write.csv(geneCountTable,file="geneCountTable_all.csv")
+   write.csv(dcounts,file="dcounts_all.csv")
 
    if(! is.null(flat.gff.file)){
-      if(isTRUE(verbose)) message("-----> reading annotation...");  
+      if(isTRUE(verbose)) message("-----> reading annotation...");
       anno.data <- readAnnotationData(flat.gff.file)
-      if(isTRUE(verbose)) message("-----> formatting annotation...");  
+      if(isTRUE(verbose)) message("-----> formatting annotation...");
       #featureName     featureType     chrom   start   end     strand  gene_id part_number     transcripts
-      
+
       exoninfo <- data.frame(chr = anno.data$chrom, start = anno.data$start, end = anno.data$end, strand = anno.data$strand)
-      if(isTRUE(verbose)) message("-----> initial generation...");  
+      if(isTRUE(verbose)) message("-----> initial generation...");
       rownames(exoninfo) <- anno.data$featureName
-      
+
       transcripts <- anno.data$transcripts
       transcripts <- gsub("\\+", ";", transcripts)
       names(transcripts) <- rownames(exoninfo)
+
+      matching <- match(rownames(exoninfo),rownames(dcounts))
       
-      matching <- match(rownames(dcounts), rownames(exoninfo))
+      #write.table(rownames(dcounts),file="dcounts_row_name.txt")
+      
+      #write.table(rownames(exoninfo),file = "exoninfo_row_name.txt")
+      
       if(any(is.na(matching))){
-         stop("FATAL ERROR! Annotation file appears to be missing information! Are you sure you are using the correct flattened annotation file, created by prepare_annotation_with_splices.py?")
+
+        cat("mapping\n")
+        
+        matching<-matching[which(!is.na(matching))]
+        dcounts<-dcounts[matching,]
+
+        print(head(dcounts))
+      
+        splitted <- strsplit(rownames(dcounts), ":")
+        exons <- sapply(splitted, "[[", 2)
+        genesrle <- sapply( splitted, "[[", 1)
+        
+        raw.geneID <- sapply( rownames(dcounts),
+                              function(x){
+                                strsplit(x, ":",fixed=TRUE)[[1]][1]
+                              })
+        
+        matching2<-match(unique(raw.geneID),rownames(geneCountTable))
+        matching2<-matching2[which(!is.na(matching2))]
+        
+        geneCountTable<-geneCountTable[matching2,]
+        
+        print(rownames(geneCountTable))
+        
+        print(head(geneCountTable))
+        
+        print(dim(geneCountTable))
+        
+        write.csv(geneCountTable,file="geneCountTable.csv")
+        write.csv(dcounts,file="dcounts.csv")
+   
+        #stop("FATAL ERROR! Annotation file appears to be missing information! Are you sure you are using the correct flattened annotation file, created by prepare_annotation_with_splices.py?")
       }
-      if(isTRUE(verbose)) message("-----> creating jscs...");  
+      if(isTRUE(verbose)) message("-----> creating jscs...");
       jscs <- newJunctionSeqCountSet(countData=dcounts, geneCountData = geneCountTable, design=design, geneIDs=genesrle, countbinIDs=exons, featureIntervals=exoninfo[matching,], transcripts=transcripts[matching])
       jscs@annotationFile <- flat.gff.file
       jscs@flatGffData <- anno.data
-      
+
       jscs@flatGffGeneData <- readGeneInfo(flat.gff.file)
       jscs <- mapGeneNames(jscs, gene.names)
    } else {
-      if(isTRUE(verbose)) message("-> FINISHED readJunctionSeqCounts (",date(),")"); 
+      if(isTRUE(verbose)) message("-> FINISHED readJunctionSeqCounts (",date(),")");
       message("Warning: flat gff annotation not set (via parameter flat.gff.file)! While technically optional, running without the annotation data may make interpretation of the data difficult. Much of the plotting functionality will not work!")
       warning("Warning: flat gff annotation not set (via parameter flat.gff.file)! While technically optional, running without the annotation data may make interpretation of the data difficult. Much of the plotting functionality will not work!")
       jscs <- newJunctionSeqCountSet(countData=dcounts, geneCountData = geneCountTable, design=design, geneIDs=genesrle, countbinIDs=exons);
-      
+
    }
    attr(jscs,"AltMethods") <- c(attr(jscs,"AltMethods"), method.countVectors = method.countVectors)
    attr(jscs,"CallStack") <- list(deparse(match.call()))
@@ -727,23 +766,23 @@ readJunctionSeqCounts <- function(countfiles = NULL, countdata = NULL,
    pData(jscs)$countfiles <- countfiles
    if(isTRUE(verbose)) message("-----> generating count vectors... (",date(),")")
    jscs@countVectors <- getAllJunctionSeqCountVectors(jscs, nCores = nCores, method.countVectors); #use.alternate.method = use.alternate.method)
-   if(isTRUE(verbose)) message("-----> count vectors generated (",date(),")");   
-   
+   if(isTRUE(verbose)) message("-----> count vectors generated (",date(),")");
+
    if(! noDESeqMatrix){
      if(isTRUE(verbose)) message("-----> generating DESeqDataSet... (",date(),")")
      jscs <- makeDESeqDataSetFromJSCS(jscs, test.formula1 = test.formula1)
      if(isTRUE(verbose)) message("-----> DESeqDataSet generated (",date(),")")
-     fData(jscs)[["allZero"]] <- (rowSums(counts(jscs)) == 0) | 
+     fData(jscs)[["allZero"]] <- (rowSums(counts(jscs)) == 0) |
                                  (rowSums(counts(jscs@DESeqDataSet)[, colData(jscs@DESeqDataSet)$countbin == "others"]) ==0)
      mcols(jscs@DESeqDataSet)$allZero <- fData(jscs)[["allZero"]]
    }
-   
+
    return(jscs)
-   if(isTRUE(verbose)) message("-> FINISHED readJunctionSeqCounts (",date(),")");  
+   if(isTRUE(verbose)) message("-> FINISHED readJunctionSeqCounts (",date(),")");
 }
 
 ##############################################################################################################################################################################################################################
-######### 
+#########
 ##############################################################################################################################################################################################################################
 
 mapGeneNames <- function(jscs, gene.names = NULL, gene.name.separator = "+", gene.multimap.separator = ","){
@@ -763,23 +802,23 @@ mapGeneNames <- function(jscs, gene.names = NULL, gene.name.separator = "+", gen
   if(names(gene.names)[2] != "gene_name"){
     message("       (Assuming \"",names(gene.names)[2],"\" column is gene_name)");
   }
-  
-  jscs@flatGffGeneData$gene_name <- mapGeneNamesToList(jscs@flatGffGeneData$geneID, 
+
+  jscs@flatGffGeneData$gene_name <- mapGeneNamesToList(jscs@flatGffGeneData$geneID,
                                                        gene.names = gene.names,
                                                        gene.name.separator = gene.name.separator,
                                                        gene.multimap.separator = gene.multimap.separator)
-  
+
   #For adding future functionality. Currently not used for anything.
   if(ncol(gene.names) > 2){
     for(i in 3:ncol(gene.names)){
-       jscs@flatGffGeneData[[names(gene.names)[i]]] <- mapGeneNamesToList(jscs@flatGffGeneData$geneID, 
+       jscs@flatGffGeneData[[names(gene.names)[i]]] <- mapGeneNamesToList(jscs@flatGffGeneData$geneID,
                                                        gene.names = gene.names,
                                                        gene.name.separator = gene.name.separator,
                                                        gene.multimap.separator = gene.multimap.separator,
                                                        oldID.column = 1, newID.column = i);
     }
   }
-  
+
   return(jscs)
 }
 
@@ -795,9 +834,9 @@ mapGeneNamesToList <- function(geneIDs, gene.names = NULL, gene.name.separator =
   oldIDs <- as.character(geneIDs)
   oldIDs.map <- as.character(gene.names[,oldID.column])
   newIDs <- as.character(gene.names[,newID.column])
-  
+
   oldID.list <- strsplit(oldIDs, "+", fixed=TRUE)
-  
+
   out <- sapply(oldID.list, function(gs){
      gs <- as.character(gs)
      paste0(sapply(gs, function(g){
@@ -815,7 +854,7 @@ mapGeneNamesToList <- function(geneIDs, gene.names = NULL, gene.name.separator =
 }
 
 ##############################################################################################################################################################################################################################
-######### 
+#########
 ##############################################################################################################################################################################################################################
 
 
@@ -827,11 +866,11 @@ readAnnotationData <- function(flat.gff.file){
      gene_id <- sub(".*gene_id\\s(\\S+).*", "\\1", aggregates$attr)
      transcripts <- gsub(".*tx_set\\s(\\S+).*", "\\1", aggregates$attr)
      part_number <- gsub(".*num\\s(\\S+).*", "\\1", aggregates$attr)
-     
+
      featureCode <- ifelse(aggregates$class == "exonic_part","E", ifelse(aggregates$class == "splice_site","J", ifelse(aggregates$class == "novel_splice_site","N","?")))
-     
+
      featureName <- paste0(gene_id,":",featureCode,part_number)
-     
+
      out <- data.frame(featureName = featureName,
                        featureType = aggregates$class,
                        chrom = aggregates$chr,
@@ -842,14 +881,14 @@ readAnnotationData <- function(flat.gff.file){
                        part_number = part_number,
                        transcripts = transcripts
                        )
-                       
+
      out$start <- as.integer(out$start - 1)
-     
+
      return(out)
 }
 
 ##############################################################################################################################################################################################################################
-######### 
+#########
 ##############################################################################################################################################################################################################################
 
 
@@ -857,7 +896,7 @@ readGeneInfo <- function(flat.gff.file){
      aggregates<-read.delim(flat.gff.file, stringsAsFactors=FALSE, header=FALSE)
      colnames(aggregates)<-c("chr", "source", "class", "start", "end", "ex", "strand", "ex2", "attr")
      aggregates <- aggregates[which(aggregates$class == "aggregate_gene"),]
-     
+
      attrSimple <- gsub("\"|=|;", "", aggregates$attr)
      attrCells <- strsplit(attrSimple,"\\s")
      #Backwards compatibility with older versions of QoRTs:
@@ -874,18 +913,18 @@ readGeneInfo <- function(flat.gff.file){
 
        out <- data.frame(geneID = gene_id,aggregateGeneStrand = aggregateGeneStrand, tx_set = transcripts, num = part_number, tx_strands = tx_strands, stringsAsFactors=FALSE)
      }
-     
+
      return(out)
 
 }
 
 ##############################################################################################################################################################################################################################
-######### 
+#########
 ##############################################################################################################################################################################################################################
 
 
-getColCt <- function(geneID, merged.data, 
-                          plot.exon.results, plot.junction.results, plot.novel.junction.results, 
+getColCt <- function(geneID, merged.data,
+                          plot.exon.results, plot.junction.results, plot.novel.junction.results,
                           plot.untestable.results){
   if(is.null(plot.exon.results)){
     plot.exon.results <- any( merged.data$featureType == "exonic_part" )
@@ -900,21 +939,20 @@ getColCt <- function(geneID, merged.data,
           plot.novel.junction.results <- FALSE
         }
   }
-  
+
   rt <- merged.data$geneID == geneID
   if(isTRUE(! plot.exon.results)){
-   rt <- rt & merged.data$featureType != "exonic_part" 
+   rt <- rt & merged.data$featureType != "exonic_part"
   }
   if(isTRUE(! plot.junction.results)){
-   rt <- rt & merged.data$featureType != "splice_site" 
+   rt <- rt & merged.data$featureType != "splice_site"
   }
   if(isTRUE(! plot.novel.junction.results)){
-   rt <- rt & merged.data$featureType != "novel_splice_site" 
+   rt <- rt & merged.data$featureType != "novel_splice_site"
   }
   if(isTRUE(! plot.untestable.results)){
    rt <- rt & merged.data$testable
   }
   return(sum(rt))
 }
-
 

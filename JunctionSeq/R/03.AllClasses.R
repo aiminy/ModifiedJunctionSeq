@@ -46,6 +46,8 @@ setClass( "JunctionSeqCountSet",
 
 
 makeDESeqDataSetFromJSCS <- function(jscs, test.formula1){
+  
+  library(DESeq2)
   countData <- jscs@countVectors
   colData <- rbind.data.frame(
                               cbind.data.frame(data.frame(sample = rownames(pData(jscs))) , pData(jscs) ),

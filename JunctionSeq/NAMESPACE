@@ -16,6 +16,7 @@ import(GenomicRanges)
 import(IRanges)
 import(S4Vectors)
 
+
 #CRAN function imports:
 importFrom(Hmisc,wtd.quantile)
 importFrom(locfit,locfit)

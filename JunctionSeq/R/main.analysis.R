@@ -24,6 +24,8 @@ estimateJunctionSeqSizeFactors <- function( jscs , method.sizeFactors = c("byGen
    #  This is preferred, since using the sub-feature counts in the normalization
    #  effectively over-weights genes with numerous annotated sub-features.
    #In practice, the results are almost always functionally-identical in most datasets.
+   library(matrixStats)
+  
    stopifnot( is( jscs, "JunctionSeqCountSet") )
    
 
@@ -159,6 +161,11 @@ estimateEffectSizes <- function(jscs,
         } else {
           disp <- fData(jscs)[i, dispColumn]
           fit <- try( {
+            
+            #print(mm)
+            
+            #print(countVector)
+            
             glmnb.fit( mm,  countVector, dispersion = disp, offset = log( modelFrame$sizeFactor ) )
           })
           if( any(inherits( fit, "try-error" ) )) {
@@ -674,7 +681,17 @@ testForDiffUsage <- function( jscs,
      message(paste0("-------> testJunctionsForDiffUsage: Finished compiling hypothesis test results. ","(",date(),")"))
      jscs@DESeqDataSet <- object
      
-     fData(jscs)$pvalue <- mcols(jscs@DESeqDataSet)$LRTPvalue
+     #temp=mcols(jscs@DESeqDataSet)$LRTStatistic
+     #cat("LRTStatistic\t",temp,"OK","\n")
+     
+     #tempDF=ncol(fullModelMatrix) - ncol(reducedModelMatrix)
+     
+     #cat("tempDF\t",tempDF,"OK","\n")
+       
+     #fData(jscs)$pvalue <- mcols(jscs@DESeqDataSet)$LRTPvalue
+     
+     fData(jscs)$pvalue <- mcols(jscs@DESeqDataSet)$LRTStatistic
+     
      fData(jscs)$testable <- fData(jscs)$testable & (! is.na(fData(jscs)$pvalue))
      fData(jscs)$padjust_noFilter <- rep(NA,nrow(fData(jscs)))
      fData(jscs)$padjust_noFilter[fData(jscs)$testable] <- p.adjust(fData(jscs)$pvalue[fData(jscs)$testable] , method = pAdjustMethod)
