@@ -5,8 +5,9 @@ import(methods)
 import(statmod)
 import(plotrix)
 import(stringr)
-import(SummarizedExperiment);
-import(DESeq2);
+import(SummarizedExperiment)
+import(DESeq2)
+import(acepack)
 
 #Bioconductor packages:
 import(Biobase)
@@ -25,6 +26,7 @@ importFrom(locfit,locfit)
 importFrom(genefilter,filtered_p)
 importFrom(genefilter,rowVars)
 importFrom(geneplotter,plotMA)
+importFrom(popbio,logi.hist.plot)
 
 importFrom("grDevices", "cairo_ps", "col2rgb", "colorRamp", "dev.off",
              "png", "rgb", "svg", "tiff", "x11")
